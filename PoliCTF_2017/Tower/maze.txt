@@ -1,3 +1,4 @@
+// You can host this challenge yourself by simply executing ncat -l -p 31337 < maze.txt
  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _  
 |  _|  _| | |  _|  _|  _ _ _|  _|  _| |  _ _ _ _|_   _|  _ _  |     |  _  | | | | 
 | |    _ _| |  _|  _| | | |  _ _ _ _ _| |  _ _ _| | | |_ _  | |_| |_|_| |       | 
