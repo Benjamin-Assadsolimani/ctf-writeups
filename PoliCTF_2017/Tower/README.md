@@ -52,7 +52,8 @@ We introduce the following variables for our path finding algorithm:
 * `orientation`: which way we are currently facing
 
 With these variables, we can implement a very naive algorithm: We know that we will walk through the whole labyrinth eventually if we take every possible **right** turn and the labyrinth does not have any loops. By the looks of it, the generated labyrinths seems to be suited for this approach and our algorithm does not have to work 100% of the time (we only need to get the flag once). We write a small method that implements this algorithm:
-```
+
+```Python
 def walk(goalx, goaly):
     path= ""
     
@@ -78,7 +79,7 @@ Ehi!! You're still in the lab!! Where are you going?!?
 ```
 Damn, apparently we cannot walk inside the labyrinth forever! Looks like we need to optimize our pathfinding algorithm a little bit. A simple improvement would be to check whether two movements cancel each other out and remove them from the path:
 
-```
+```Python
 def appendToPath(path, move):
     if len(path) == 0:
         return (path+move)
