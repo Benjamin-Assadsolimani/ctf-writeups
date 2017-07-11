@@ -6,80 +6,65 @@ import re
 import sys
 import copy
 
-goal= ""
+s= None
 maze= []
+goal= (0, 0)
 orientation= 0
 path= ""
-s= None
-
-lineWidth= 81
-numLines= 121
 
 def connect():
     global s
+    
+    print "[+] connecting to server"
     s= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #change host to 'localhost' and server maze.txt at port 31337 to host the challenge yourself
     s.connect(("tower.chall.polictf.it", 31337))
     
+    #read initial data from server
     rsp= ""
-    while not "_" in rsp:
-        rsp= s.recv(1024)
+    while not "(the lower left cell is 0,0)" in rsp:
+        rsp= rsp+s.recv(1024)
         
-    line=""
-    while not "start" in line:
-        line= s.recv(1024)
-        rsp= rsp+line
-    
-    print "Received input."
+    print "[+] received input"
     return rsp
-
-
-def coord_to_maze(x,y):
-    return ( 2*x+1 , len(maze)-y-1)
-
-def setGoal(showMaze):
-    x,y= goal
-    showMaze[y]= showMaze[y][:x]+u"\u25A0"+showMaze[y][x+1:]
-    return showMaze
-
-def printMaze(maze):
-    
-    print "width: "+str(len(maze[0]))
-    print "height: "+str(len(maze))
-    for line in maze:
-        print line
 
 def parse():
     global goal,maze
     
     inputData= connect()
-    
     for line in inputData.splitlines():
+        if len(line) < 2:
+            continue
         if line.startswith("start"):
             continue
         if line.startswith("goal"):
+            #parse goal coordinations
             line= line.split(" ")[1:]
             goal= (int(line[0][:-1]), int(line[1]))
-            goal= coord_to_maze(goal[0], goal[1])
-            print "Goal: "+str(goal)
+            goal= coordToMaze(goal[0], goal[1])
+            print "[+] parsed goal location: "+str(goal)
             break
         
+        #store each line of the labyrinth as an element in the maze list
         maze.append(line[:-1])
-        
 
-def printCoord(x, y):
-    x, y= coord_to_maze(x,y)
-    print str(x)+", "+str(y)
-    print maze[y][x]
-    
+#convert coordinates to position in maze datastructure
+def coordToMaze(x,y):
+    return ( 2*x+1 , len(maze)-y-1)
+
+#put a marker into the maze datastructure where the goal is located
+def setGoal(showMaze):
+    x,y= goal
+    showMaze[y]= showMaze[y][:x]+u"\u25A0"+showMaze[y][x+1:]
+    return showMaze
+
 def right(orientation):
     return (orientation +1) % 4
-
 
 def left(orientation):
     return (orientation -1) % 4
 
-
-def can_move_forward((x,y),orientation):
+def canMoveForward((x,y),orientation):
     if orientation == 0: #w
         return y > 0 and maze[y-1][x] != "_"
     if orientation == 1: #d
@@ -89,7 +74,7 @@ def can_move_forward((x,y),orientation):
     if orientation == 3: #a
         return x>0 and maze[y][x-1] != "|"
 
-def move_forward(x,y,orientation):
+def moveForward(x,y,orientation):
     if orientation == 0: #w
         return x, y-1
     if orientation == 1: #d
@@ -113,29 +98,20 @@ def appendToPath(path, move):
     
     return (path+move)
      
-
-def walk(goalx,goaly):
+def walk(goalx, goaly):
     path= ""
-    count= 0
     
-    x,y = coord_to_maze(0,0)
+    x,y = coordToMaze(0,0)
     orientation = 0
     while(x != goalx or y != goaly):
         orientation = right(orientation)
-        while not can_move_forward((x,y),orientation):
+        while not canMoveForward((x,y),orientation):
             orientation= left(orientation)
             
-        x,y = move_forward(x,y,orientation)
+        x,y = moveForward(x,y,orientation)
         move= convertOrientation(orientation)
         path= appendToPath(path, move)
-        
-        count+= 1
-        if count < 13000:
-            sys.stdout.write(convertOrientation(orientation))
-        else:
-            return path
-        #sys.stdout.flush()
-    
+
     return path
 
 def convertBack(orientation):
@@ -160,10 +136,10 @@ def convertOrientation(orientation):
 
 def plotPath(path):
     showMaze= copy.deepcopy(maze)
-    x,y= coord_to_maze(0, 0)
+    x,y= coordToMaze(0, 0)
     
     for move in path:
-        x, y= move_forward(x, y, convertBack(move))
+        x, y= moveForward(x, y, convertBack(move))
         symbol= "#"
         if showMaze[y][x] == "_":
             symbol= "#"
@@ -171,20 +147,23 @@ def plotPath(path):
         showMaze[y]= showMaze[y][:x]+symbol+showMaze[y][x+1:]
         
     showMaze= setGoal(showMaze)
-    printMaze(showMaze)
+    print ""
+    for line in showMaze:
+        print line
+    print ""
     
 parse()
-goalx= goal[0]
-goaly= goal[1]
-path= walk(goalx, goaly)
-print path
+path= walk(goal[0], goal[1])
 plotPath(path)
+print "[+] Calculated path of length "+str(len(path))
 
-
-print "Number of steps: "+str(len(path))
 s.send(path+"\n")
-for i in range(10):
-    rsp= s.recv(1024)
-    print str(rsp)
+
+rsp= s.recv(1024)
+flag= re.findall("flag\{.*\}", rsp)
+if flag:
+    print "[+] Acquired flag: "+flag[0]
+else:
+    print "[-] Failure: "+rsp
 
 

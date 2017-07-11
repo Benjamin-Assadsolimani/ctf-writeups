@@ -1,18 +1,16 @@
 # PoliCTF 2017 - **Tower**
 `Grab Bag` `154pts` `74 solves`
 
-<br />
 
-## Description
+## Challenge Description
 You are entering a Lab where you will be the experiment
 
 `nc tower.chall.polictf.it 31337`
 
-<br />
 
 ## Overview
 After connecting to the given service via netcat, we are presented with a random labyrinth, our start coordinates (which are always at [0,0]) and the coordinates of the goal that we have to reach:
-```bash
+```
 [...]
 |   | |_ _|_|   |  _|_  |  _  |  _ _| |_  | | | | | |_|_  |_  | |   | |_|_ _| |_| 
 | |_|  _   _ _|    _   _|  _| | |   | | |_ _| |         |_ _ _    |   | | | |_  | 
@@ -30,22 +28,74 @@ We can navigate through the labyrinth by sending `w` `a` `s` `d` and are not all
 * Write an algorithm that calculates a path from the start location to the goal location
 * Send the path to the service and receive the flag
 
-<br />
 
 ## Solution
 > **Note:** The full solution source code can be found under `PoliCTF_2017/tower/tower.py`
 
 ### Labyrinth processing
+We store the labyrinth data in a list of strings called `maze` and remove the trailing whitespace and newline characters. We know that each labyrinth has 121 lines where each line has a length of 81. 
 
+The labyrinth consists of the following characters:   
+* ` ` &nbsp; whitespace: we can walk on this field from any direction unless an underline field is above it.
+* `_` underline: We can walk on this field from everywhere except from below.
+* `|` vertical bar: we cannot walk on this field.
+
+Furthermore, the first column is not part of the coordinate system as we start at position (0,0). To move up and down, we simply have to increase or decrease the list index of our labyrinth datastructure. However, our coordinate system starts in the upper left corner while the provided coordinates start in the lower left, so we have to start at `len(maze)` and then subtract our position from that (plus the offset of 1 because the lower wall is also not part of the labyrinth). To move left and right, we have to take the offset of 1 into consideration as well as move 2 characters inside the respective string since the labyrinth is spaced out on the horizontal axis. We write a simple conversion method:
+```Python
+def coordToMaze(x,y):
+    return ( 2*x+1 , len(maze)-y-1)
+```
 
 ### Path finding algorithm
+We introduce the following variables for our path finding algorithm:
+* `(x,y)`: our current position in the labyrinth
+* `orientation`: which way we are currently facing
 
+With these variables, we can implement a very naive algorithm: We know that we will walk through the whole labyrinth eventually if we take every possible **right** turn and the labyrinth does not have any loops. By the looks of it, the generated labyrinths seems to be suited for this approach and our algorithm does not have to work 100% of the time (we only need to get the flag once). We write a small method that implements this algorithm:
+```
+def walk(goalx, goaly):
+    path= ""
+    
+    x,y = coordToMaze(0,0)
+    orientation = 0
+    while(x != goalx or y != goaly):
+        orientation = right(orientation)
+        while not canMoveForward((x,y),orientation):
+            orientation= left(orientation)
+            
+        x,y = moveForward(x,y,orientation)
+        move= convertOrientation(orientation)
+        path= appendToPath(path, move)
 
-### Getting the flag
+    return path
+```
 
+The algorithm does indeed return a valid path so we try it out:
 
 ```
 Number of steps: 220
 Ehi!! You're still in the lab!! Where are you going?!?
 ```
+Damn, apparently we cannot walk inside the labyrinth forever! Looks like we need to optimize our pathfinding algorithm a little bit. A simple improvement would be to check whether two movements cancel each other out and remove them from the path:
 
+```
+def appendToPath(path, move):
+    if len(path) == 0:
+        return (path+move)
+    lastMove= convertBack(path[-1])
+    inverted= invert(lastMove)
+    
+    if inverted == convertBack(move):
+        return path[:-1]
+    
+    return (path+move)
+```
+
+
+### Getting the flag
+
+Our improved algorithm seems to already compute way smaller pathes and indeed, the server accepts our input:
+
+```
+flag{Does_Runn1ng_r4ndom_m4z3s_make_you_h4ppy!?!?!?}
+```
