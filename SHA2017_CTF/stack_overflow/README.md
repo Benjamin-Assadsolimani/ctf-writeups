@@ -76,9 +76,9 @@ We are presented with an overview of the encrypted file:
 
 ![OTP PWN utility overview](https://derbenoo.github.io/public/images/ctf/sha2017_ctf_stack_overflow_otp_pwn_overview.png)
 
-The file contents is split up in blocks of the size of the keylength, so each block is encrypted with exactly the same key. This allows us to quickly check whether a plaintext guess was correct as we can see whether the resulting key changes produce valid plaintext in the other blocks or not.
+The file contents is split up in blocks of the size of the key length, so each block is encrypted with exactly the same key. This allows us to quickly check whether a plaintext guess was correct as we can see whether the resulting key changes produce valid plaintext in the other blocks or not.
 
-So, we know from the filename that we are probably dealing with an encrypted PDF file. We know that most PDF files start with `%PDF-1.`, so lets apply that plaintext guess with the command `:p 0 %PDF-1.`:
+So, we know from the filename that we are probably dealing with an encrypted PDF file. We know that most PDF files start with `%PDF-1.`, so let's apply that plaintext guess with the command `:p 0 %PDF-1.`:
 
 ![OTP PWN first plaintext guess](https://derbenoo.github.io/public/images/ctf/sha2017_ctf_stack_overflow_otp_pwn_first_guess.png)
 
